@@ -2,145 +2,90 @@ clear
 clc
 close all
 
-% DGP
+%% Tobit model MLE
 
-n = 400; % sample size
-T = 5; % each indicidual's time points
-k = 5;
-q = 1;
+global positive
+global negative
 
-beta = (1:k)';
+% Generate data
+beta_DGP = 0.25;
+datapoint = 20000;
 sigma = 1;
-D = eye(q);
-X = cell(n, 1);
-W = cell(n, 1);
-b = cell(n, 1);
-y = cell(n, 1);
+x_i = normrnd(1, 1, [1, datapoint])';
+epsilon_i = normrnd(0, sigma, [1, datapoint])';
 
-for i = 1:n
-    X{i} = [ones(T, 1) mvnrnd(ones(1, k-1), eye(k-1), T)];
-    W{i} = X{i}(:, 1:q); % Wi a subset of Xi (Wi is in Xi)
-    b{i} = mvnrnd(zeros(1, 1), D)';
-    y{i} = X{i} * beta + W{i} * b{i} + mvnrnd(0, sigma, T);
-end
+y_i = x_i * beta_DGP + epsilon_i;
+z_i = y_i;
+z_i(z_i<0)=0;
 
-%% Fixed effect estimation by OLS
-ybar= zeros(n);
-xbar= zeros(n, T);
+% partition data
+yixi_matrix = [y_i x_i];
 
-for j =1:n
-    ybar(j) = mean(y{j});
-    xbar(j, :) = mean(cell2mat(X(j)), 1);
-end
-for i = 1:n
-    ystar{i, 1} = y{i} - ybar(j);
-    xstar{i, 1} = X{i} - xbar(j);
-end
+y_positive = y_i(y_i > 0);
+x_positive = x_i(y_i > 0);
+positive = [y_positive, x_positive];
 
-for i = 1:n
-    temp_y = cell2mat(ystar(i, 1));
-    temp_x = cell2mat(xstar(i, 1));
-    for j = 1:T
-        ystar_stack((i - 1) * T + j, :) = temp_y(j, :);
-        xstar_stack((i - 1) * T + j, :) = temp_x(j, :);
-    end
-end
-xstar_stack = xstar_stack(:, 2:5);
-beta_hat = (xstar_stack' * xstar_stack)^(-1) * xstar_stack' * ystar_stack;
-
-%% Random effect estimation by MLE
-
-global yi_stack
-global Xi_stack
-global Wi_stack
-
-for i = 1:n
-    temp_yi = cell2mat(y(i, 1));
-    temp_Xi = cell2mat(X(i, 1));
-    temp_Wi = cell2mat(W(i, 1));
-    for j = 1:T
-        yi_stack((i - 1) * T + j, :) = temp_yi(j, :);
-        Xi_stack((i - 1) * T + j, :) = temp_Xi(j, :);
-        Wi_stack((i - 1) * T + j, :) = temp_Wi(j, :);
-    end
-end
+y_negative = y_i(y_i <= 0);
+x_negative = x_i(y_i <= 0);
+negative = [y_negative, x_negative];
 
 options = optimset('MaxFunEvals', 10000);
-[beta_MLE_panelData,~,~,~,~,neghesMLE_panelData] = fminunc(...
-    @MLE_panelData, [1.1, 2.1, 3.1, 4.1, 5.1, 1.1, 1.1], options);
-beta_se_panelData = sqrt(diag(inv(neghesMLE_panelData)));
+[beta_MLE,~,~,~,~,neghesMLE] = fminunc(@MLE, [-10, 10], options);
+beta_se = sqrt(diag(inv(neghesMLE)));
 
-%% Random effect estimation by MCMC
+%% Tobit model Gibbs Sampler
+p = 1;
+n = datapoint;
+X = x_i;
 
-% Gibbs
+LB = -inf(n,1);
+LB(y_i > 0) = 0;
+UB = zeros(n, 1);
+UB(y_i > 0) = inf;
+
+sig_square = 1;
+delta_0 = 2;
+nu_0 = 2;
 
 maxiter = 6000; 
 burn = 1000;
-post = maxiter - burn;
-B0 = 100*eye(k);
-invB0 = inv(B0);
-b0 = zeros(k,1);
-d0 = q + 2;
-D0 = eye(q)/100;
-nu0 = 2;
-delta0 = 2;
-betas = NaN(k,post);
-sig2s = NaN(1,post);
-Ds = NaN(q,post);
-D = eye(q);
-invD = inv(D);
-sig2 = 1;
-beta = b0;
+postsize = maxiter - burn;
+betas = NaN(p, postsize);
+Bpre = 10 * eye(p);
+bpre = zeros(p, 1);
+sigmas = NaN(p, postsize);
+z = zeros(n,1);
+
+beta = 1;
+Bpost = inv(inv(Bpre) + X' * X);
 
 for iter = 1:maxiter
+    z_i = y_i;
+    GGG = norminv(...
+        unifrnd(...
+        normcdf(LB , X * beta, sig_square*ones(n,1)), ...
+        normcdf(UB , X * beta, sig_square*ones(n,1))), ...
+        X * beta, sig_square*ones(n,1));
     
-    temp1 = 0; 
-    temp2 = 0; 
-    temp3 = 0; 
-    temp4 = 0;
+    z_i(y_i == 0) = GGG(y_i == 0) ;
+    e = z_i - X * beta;
+    sig_square = iwishrnd(delta_0 + e' * e, nu_0 + n);
+    bpost = Bpost * (Bpre\bpre + X' * z_i/sig_square);
+    beta = mvnrnd(bpost, Bpost)';
+    Bpost = inv(inv(Bpre) + X' * X/sig_square);
     
-    for i = 1:n
-        Bihat = inv(invD+W{i}'*W{i}/sig2); 
-        Bihat = (Bihat+Bihat')/2;
-        bihat = Bihat*W{i}'*(y{i}-X{i}*beta)/sig2;
-        b{i} = mvnrnd(bihat,Bihat)';
-        temp1 = temp1 + b{i}*b{i}';
-        temp2 = temp2 + (y{i}-X{i}*beta-W{i}*b{i})'*(y{i}-X{i}*beta-W{i}*b{i});
-    end
-    
-    D = iwishrnd(D0+temp1,d0+n); 
-    invD = inv(D); 
-    sig2 = iwishrnd(delta0+temp2,nu0+n*T);
-    
-    for i = 1:n
-         temp3 = temp3 + X{i}'/(W{i}*D*W{i}'+sig2*eye(T))*X{i};
-         temp4 = temp4 + X{i}'/(W{i}*D*W{i}'+sig2*eye(T))*y{i};
-%        temp3 = temp3 + X{i}'*X{i}/sig2;
-%        temp4 = temp4 + X{i}'*(y{i}-W{i}*b{i})/sig2;
-    end
-    Bhat = inv(invB0+temp3); 
-    Bhat = (Bhat+Bhat')/2; 
-    bhat = Bhat*(invB0*b0+temp4);
-    beta = mvnrnd(bhat,Bhat)';
-
     if iter > burn
-        betas(:,iter-burn) = beta; 
-        sig2s(:,iter-burn) = sig2; 
-        Ds(:,iter-burn) = D; 
+        betas(:, iter-burn) = beta;
+        sigmas(:,iter-burn) = sig_square;
     end
 end
 
-% Trace plot for beta
-figure(1)
-plot(betas')
+figure; 
+plot(betas'); % trace plot
+beta_mean = mean(betas, 2);
+beta_std = std(betas, [], 2);
 
-figure(2)
-plot(sig2s')
-
-figure(3)
-plot(Ds')
-
-% Posterior means & sd
-
-beta_est = mean(betas,2); sig2_est = mean(sig2s); D_est = mean(Ds);
-beta_sd = std(betas,[],2); sig2_sd = std(sig2s); D_sd = std(Ds,[],3);
+figure;
+plot(sigmas'); % trace plot
+sigma_mean = mean(sigmas, 2);
+sigma_std = std(sigmas, [], 2);
