@@ -62,7 +62,9 @@ alt="\delta_0=2">, and <img src=
 "https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+%5Cnu_0%3D2" 
 alt="\nu_0=2">. Then the Gibbs sampler is initiated as follows:
 
-1. Let <img src=
+1. Let 
+
+<img src=
 "https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+y_i+%5C+%5C+%5C+%5Cleft%5C%7B%5Cbegin%7Bmatrix%7D%0A%5Ctext%7Bdraw+from+%7D+%5C+%5C+%5C+%5C+TN_%7B%28-%5Cinfty%2C0%29%7D%28X%27%5Cbeta%2C+%5Csigma%5E2%29%2C+%26%5Ctext%7Bif+%7Dz_i%3D0+%5C%5C%0A%5Ctext%7Bbe+%7D+%5C+%5C+%5C+%5C+%5C+%5C+%5C+%5C+%5C+%5C+%5C+z_i%2C+%26+%5Ctext%7Bif+%7Dz_i%3E+0%0A%5Cend%7Bmatrix%7D%5Cright." 
 alt="y_i \ \ \ \left\{\begin{matrix}
 \text{draw from } \ \ \ \ TN_{(-\infty,0)}(X'\beta, \sigma^2), &\text{if }z_i=0 \\
