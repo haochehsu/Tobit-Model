@@ -83,12 +83,12 @@ alt="\left[\sigma^2 | z, y,\beta\right]\sim IG\left(\dfrac{\nu_0+n}{2},\dfrac{\d
 
 - The process converges in 3 iterations:
 
-<center><img src="./images/convergence.pdf" width="90%"></center>
+<center><img src="./images/convergence.png" width="90%"></center>
 
 - After 1000 burn-in periods (6000 total iterations), the posterior mean is 0.2574 and the standard deviation is 0.0061.
 
-<center><img src="./images/mean.pdf" width="90%"></center>
+<center><img src="./images/mean.png" width="90%"></center>
 
 - The posterior standard deviation is 1.0016 and the standard deviation is 0.0098.
 
-<center><img src="./images/sigma.pdf" width="90%"></center>
+<center><img src="./images/sigma.png" width="90%"></center>
