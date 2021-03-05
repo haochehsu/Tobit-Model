@@ -79,6 +79,8 @@ alt="\left[\beta | z, y,\sigma^2\right]\sim N(\hat{\beta}, \hat{B})  \ \ \ \text
 "https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+%5Cleft%5B%5Csigma%5E2+%7C+z%2C+y%2C%5Cbeta%5Cright%5D%5Csim+IG%5Cleft%28%5Cdfrac%7B%5Cnu_0%2Bn%7D%7B2%7D%2C%5Cdfrac%7B%5Cdelta_0%2B+e%27+e%7D%7B2%7D%5Cright%29+%5C+%5C+%5C++%5Ctext%7Bwhere%7D++%5C+%5C+%5C+e%3Dz-X%27%5Cbeta" 
 alt="\left[\sigma^2 | z, y,\beta\right]\sim IG\left(\dfrac{\nu_0+n}{2},\dfrac{\delta_0+ e' e}{2}\right) \ \ \  \text{where}  \ \ \ e=z-X'\beta">
 
+### Sampling process
+
 - The process converges in 3 iterations:
 
 <center><img src="./images/convergence.pdf" width="90%"></center>
